@@ -12,7 +12,8 @@
 /**
  * Struct to hold all three pieces of a URL
  */
-typedef struct urlinfo_t {
+typedef struct urlinfo_t
+{
   char *hostname;
   char *port;
   char *path;
@@ -34,20 +35,55 @@ urlinfo_t *parse_url(char *url)
 
   urlinfo_t *urlinfo = malloc(sizeof(urlinfo_t));
 
-  /*
-    We can parse the input URL by doing the following:
+  // ex.) localhost:3490/d20 and https://www.google.com:80/
+  // GET /path HTTP/1.1
+  // Host: hostname:port
+  // Connection: close
 
-    1. Use strchr to find the first backslash in the URL (this is assuming there is no http:// or https:// in the URL).
-    2. Set the path pointer to 1 character after the spot returned by strchr.
-    3. Overwrite the backslash with a '\0' so that we are no longer considering anything after the backslash.
-    4. Use strchr to find the first colon in the URL.
-    5. Set the port pointer to 1 character after the spot returned by strchr.
-    6. Overwrite the colon with a '\0' so that we are just left with the hostname.
-  */
+  // check if url has http at the beginning
+  // returns a pointer to the first occurrence in haystack
+  char *double_slashes = strstr(hostname, "//");
+  int url_len = strlen(hostname);
 
-  ///////////////////
-  // IMPLEMENT ME! //
-  ///////////////////
+  if (double_slashes)
+  {
+    // has "//" (assumed protocol prefix)
+    // index for second /
+    int index = (int)(double_slashes - hostname) + 1;
+    int length_copy = url_len - (index + 1);
+
+    // removes protocol info
+    char *remove_protocol = malloc(sizeof(char) * (length_copy + 1));
+    memcpy(remove_protocol, &hostname[index + 1], (length_copy + 1));
+    free(hostname);
+
+    char host2[url_len];
+    char port2[url_len];
+    char path2[url_len];
+
+    sscanf(remove_protocol, "%[^:]:%[^/]%s", host2, port2, path2);
+
+    urlinfo->hostname = strdup(host2);
+    urlinfo->port = strdup(port2);
+    urlinfo->path = strdup(path2);
+
+    free(remove_protocol);
+  }
+  else
+  {
+    // no "//"
+    char host2[url_len];
+    char port2[url_len];
+    char path2[url_len];
+
+    sscanf(hostname, "%[^:]:%[^/]%s", host2, port2, path2);
+
+    urlinfo->hostname = strdup(host2);
+    urlinfo->port = strdup(port2);
+    urlinfo->path = strdup(path2);
+
+    free(hostname);
+  }
 
   return urlinfo;
 }
@@ -76,12 +112,13 @@ int send_request(int fd, char *hostname, char *port, char *path)
 }
 
 int main(int argc, char *argv[])
-{  
-  int sockfd, numbytes;  
+{
+  int sockfd, numbytes;
   char buf[BUFSIZE];
 
-  if (argc != 2) {
-    fprintf(stderr,"usage: client HOSTNAME:PORT/PATH\n");
+  if (argc != 2)
+  {
+    fprintf(stderr, "usage: client HOSTNAME:PORT/PATH\n");
     exit(1);
   }
 
@@ -92,10 +129,11 @@ int main(int argc, char *argv[])
     4. Call `recv` in a loop until there is no more data to receive from the server. Print the received response to stdout.
     5. Clean up any allocated memory and open file descriptors.
   */
-
-  ///////////////////
-  // IMPLEMENT ME! //
-  ///////////////////
+  printf("arg 1: %s\n", argv[1]);
+  struct urlinfo_t *url = parse_url(argv[1]);
+  printf("host: %s\n", url->hostname);
+  printf("port: %s\n", url->port);
+  printf("path: %s\n", url->path);
 
   return 0;
 }
