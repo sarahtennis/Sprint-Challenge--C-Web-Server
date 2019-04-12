@@ -111,13 +111,17 @@ int send_request(int fd, char *hostname, char *port, char *path)
   int request_length = sprintf(request,
                                "GET %s HTTP/1.1\n"
                                "Host: %s:%s\n"
-                               "Connection: close",
+                               "Connection: close\n"
+                               "\n",
                                path,
                                hostname,
                                port);
 
+  printf("SEND REQUEST-----------\n%s\n-----------------------\n", request);
+
   rv = send(fd, request, request_length, 0);
 
+  // number of bytes sent
   return rv;
 }
 
@@ -132,15 +136,35 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
-  /*
-    2. Initialize a socket by calling the `get_socket` function from lib.c
-    3. Call `send_request` to construct the request and send it
-    4. Call `recv` in a loop until there is no more data to receive from the server. Print the received response to stdout.
-    5. Clean up any allocated memory and open file descriptors.
-  */
-
   // 1. Parse the input URL
   struct urlinfo_t *url = parse_url(argv[1]);
+
+  // 2. Initialize a socket by calling the `get_socket` function from lib.c
+  // int get_socket(char *hostname, char *port)
+  sockfd = get_socket(url->hostname, url->port);
+
+  printf("hostname: %s\n", url->hostname);
+  printf("port: %s\n", url->port);
+  printf("path: %s\n", url->path);
+
+  // 3. Call `send_request` to construct the request and send it
+  // int send_request(int fd, char *hostname, char *port, char *path)
+  numbytes = send_request(sockfd, url->hostname, url->port, url->path);
+
+  printf("numbytes: %d\n", numbytes);
+
+  // 4. Call `recv` in a loop until there is no more data to receive from the server.
+  // Print the received response to stdout.
+  recv(sockfd, buf, BUFSIZE, 0);
+  fprintf(stdout, "%s\n", buf);
+
+  // 5. Clean up any allocated memory and open file descriptors.
+  free(url->hostname);
+  free(url->path);
+  free(url->port);
+  free(url);
+
+  close(sockfd);
 
   return 0;
 }
